@@ -49,6 +49,7 @@ from typing import (
     Collection,
     overload,
 )
+from pathlib import Path
 
 import discord
 from discord import app_commands
@@ -81,6 +82,8 @@ if TYPE_CHECKING:
     )
     from .core import Command
     from .hybrid import CommandCallback, ContextT, P
+
+    from .errors import ExtensionFailed
 
     _Prefix = Union[Iterable[str], str]
     _PrefixCallable = MaybeAwaitableFunc[[BotT, Message], _Prefix]
@@ -222,6 +225,7 @@ class BotBase(GroupMixin[None]):
             )
             if trigger_warning:
                 _log.warning('Privileged message content intent is missing, commands may not work as expected.')
+                
 
     def dispatch(self, event_name: str, /, *args: Any, **kwargs: Any) -> None:
         # super() will resolve to Client
@@ -974,6 +978,28 @@ class BotBase(GroupMixin[None]):
             return importlib.util.resolve_name(name, package)
         except ImportError:
             raise errors.ExtensionNotFound(name)
+
+    async def load_commands_from_directory(self, directory: str):
+        """
+        Load a list of extensions from a directory
+        
+        Parameters
+        ------------
+        directory (str)
+          The target directory from which extensions will be loaded.
+          It must be an existing directory containing valid Python modules or packages.
+          
+        """
+        
+        for file in Path(directory).glob('**/*.py', case_insensitive=True):
+            file_extension = str(file).replace('/', '.').replace('\\', '.').replace('.__init__', '')[:-3]
+            
+            try:
+                await self.load_extension(file_extension)
+            except ExtensionFailed as exception:
+                logging.warning(f'Failed to load {file_extension}: {exception}')
+            except:
+                pass
 
     async def load_extension(self, name: str, *, package: Optional[str] = None) -> None:
         """|coro|
