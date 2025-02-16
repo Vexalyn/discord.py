@@ -310,9 +310,10 @@ class DiscordWebSocket:
     GUILD_SYNC                  = 12
     # fmt: on
 
-    def __init__(self, socket: aiohttp.ClientWebSocketResponse, *, loop: asyncio.AbstractEventLoop) -> None:
+    def __init__(self, socket: aiohttp.ClientWebSocketResponse, *, loop: asyncio.AbstractEventLoop, mobile_status: Optional[bool] = False) -> None:
         self.socket: aiohttp.ClientWebSocketResponse = socket
         self.loop: asyncio.AbstractEventLoop = loop
+        self.mobile_status = mobile_status
 
         # an empty dispatcher to prevent crashes
         self._dispatch: Callable[..., Any] = lambda *args: None
@@ -373,7 +374,7 @@ class DiscordWebSocket:
             )
 
         socket = await client.http.ws_connect(str(url))
-        ws = cls(socket, loop=client.loop)
+        ws = cls(socket, loop=client.loop, mobile_status=client.mobile_status)
 
         # dynamically add attributes needed
         ws.token = client.http.token
@@ -446,8 +447,8 @@ class DiscordWebSocket:
                 'token': self.token,
                 'properties': {
                     'os': sys.platform,
-                    'browser': 'discord.py',
-                    'device': 'discord.py',
+                    'browser': 'Discord iOS' if self.mobile_status else 'discord.py',
+                    'device': 'Discord iOS' if self.mobile_status else 'discord.py',
                 },
                 'compress': True,
                 'large_threshold': 250,
