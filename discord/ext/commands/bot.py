@@ -998,8 +998,6 @@ class BotBase(GroupMixin[None]):
                 await self.load_extension(file_extension)
             except ExtensionFailed as exception:
                 logging.warning(f'Failed to load {file_extension}: {exception}')
-            except:
-                pass
 
     async def load_extension(self, name: str, *, package: Optional[str] = None) -> None:
         """|coro|
